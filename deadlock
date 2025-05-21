@@ -1,0 +1,112 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+#define MAX 10 // Maximum number of processes/resources
+
+void printState(int p, int r,int alloc[MAX][MAX],int request[MAX][MAX],int avail[MAX],bool finish[MAX]) {
+    printf("\nProcess | Allocation | Available | Request   | Finish\n");
+    printf("-------------------------------------------------------------\n");
+
+    for (int i = 0; i < p; i++) {
+        printf("P%d\t| ", i);
+        for (int j = 0; j < r; j++)
+            printf("%d ", alloc[i][j]);
+
+        printf("\t| ");
+        if (i == 0)
+            for (int j = 0; j < r; j++)
+                printf("%d ", avail[j]);
+        else
+            for (int j = 0; j < r; j++)
+                printf("  ");
+
+        printf("\t| ");
+        for (int j = 0; j < r; j++)
+            printf("%d ", request[i][j]);
+
+        printf("\t| %s\n", finish[i] ? "true" : "false");
+    }
+}
+
+void detectDeadlock(int p, int r,int alloc[MAX][MAX],int request[MAX][MAX],int avail[MAX]) {
+    bool finish[MAX] = {false};
+
+    printState(p, r, alloc, request, avail, finish);
+
+    bool progress = true;
+    while (progress) {
+        progress = false;
+
+        for (int i = 0; i < p; i++) {
+            if (!finish[i]) {
+                bool canRun = true;
+                for (int j = 0; j < r; j++) {
+                    if (request[i][j] > avail[j]) {
+                        canRun = false;
+                        break;
+                    }
+                }
+
+                if (canRun) {
+                    printf("\nProcess P%d can complete. Releasing its resources.\n", i);
+                    for (int j = 0; j < r; j++)
+                        avail[j] += alloc[i][j];
+                    finish[i] = true;
+                    progress = true;
+
+                    printState(p, r, alloc, request, avail, finish);
+                }
+            }
+        }
+    }
+
+    bool deadlock = false;
+    printf("\nProcesses in deadlock: ");
+    for (int i = 0; i < p; i++) {
+        if (!finish[i]) {
+            printf("P%d ", i);
+            deadlock = true;
+        }
+    }
+    if (!deadlock)
+        printf("None");
+    printf("\n");
+}
+
+int main() {
+    int p, r;
+    int alloc[MAX][MAX], request[MAX][MAX], avail[MAX];
+
+    printf("Enter number of processes: ");
+    scanf("%d", &p);
+
+    printf("Enter number of resource types: ");
+    scanf("%d", &r);
+
+    printf("Enter available resources (A B C ...):\n");
+    for (int i = 0; i < r; i++) {
+        printf("Resource %c: ", 'A' + i);
+        scanf("%d", &avail[i]);
+    }
+
+    printf("Enter allocation matrix:\n");
+    for (int i = 0; i < p; i++) {
+        printf("Process P%d:\n", i);
+        for (int j = 0; j < r; j++) {
+            printf("Resource %c: ", 'A' + j);
+            scanf("%d", &alloc[i][j]);
+        }
+    }
+
+    printf("Enter request matrix:\n");
+    for (int i = 0; i < p; i++) {
+        printf("Process P%d:\n", i);
+        for (int j = 0; j < r; j++) {
+            printf("Resource %c: ", 'A' + j);
+            scanf("%d", &request[i][j]);
+        }
+    }
+
+    detectDeadlock(p, r, alloc, request, avail);
+    return 0;
+}
