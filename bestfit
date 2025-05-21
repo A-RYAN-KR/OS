@@ -45,6 +45,38 @@ void displayAllocation(struct Process processes[], int p_count) {
     }
 }
 
+void calculateExternalFragmentation(struct Process processes[], int p_count, struct Block blocks[], int b_count) {
+    int total_external_fragmentation = 0;
+
+    printf("\nExternal Fragmentation:\n");
+
+    for (int i = 0; i < p_count; i++) {
+        if (processes[i].allocated_block == -1) {
+            int can_fit = 0;
+
+            // Check if any remaining block can fit this unallocated process
+            for (int j = 0; j < b_count; j++) {
+                if (blocks[j].size >= processes[i].size) {
+                    can_fit = 1;
+                    break;
+                }
+            }
+
+            // If no block can fit this process, then the total remaining memory is considered fragmented
+            if (!can_fit) {
+                int frag = 0;
+                for (int j = 0; j < b_count; j++) {
+                    frag += blocks[j].size;
+                }
+                total_external_fragmentation += frag;
+                printf("Process P%d cannot be allocated. Fragmentation for P%d: %d\n", processes[i].pid, processes[i].pid, frag);
+            }
+        }
+    }
+
+    printf("Total External Fragmentation: %d\n", total_external_fragmentation);
+}
+
 int main() {
     int p_count, b_count;
 
@@ -71,6 +103,7 @@ int main() {
 
     bestFit(processes, p_count, blocks, b_count);
     displayAllocation(processes, p_count);
+    calculateExternalFragmentation(processes, p_count, blocks, b_count);
 
     return 0;
 }
