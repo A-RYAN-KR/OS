@@ -5,8 +5,8 @@
 typedef struct Block {
     int size;
     int is_free;
-    int process_size;      
-    char process;          
+    int process_size;
+    char process;
     struct Block* left;
     struct Block* right;
 } Block;
@@ -54,9 +54,9 @@ int allocate(Block* block, int size, char name) {
     return allocate(block->right, size, name);
 }
 
-// Print blocks with indentation
-void print_blocks(Block* block, int level) {
-    if (!block) return;
+// Print blocks and calculate internal fragmentation
+int print_blocks(Block* block, int level, int* total_frag) {
+    if (!block) return 0;
 
     for (int i = 0; i < level; i++) printf("    ");
 
@@ -65,15 +65,16 @@ void print_blocks(Block* block, int level) {
     if (!block->is_free && block->process != '-') {
         int frag = block->size - block->process_size;
         printf(" (%c, Frag: %d)", block->process, frag);
+        *total_frag += frag;
     }
 
     printf("\n");
 
-    print_blocks(block->left, level + 1);
-    print_blocks(block->right, level + 1);
+    print_blocks(block->left, level + 1, total_frag);
+    print_blocks(block->right, level + 1, total_frag);
+    return *total_frag;
 }
 
-// Main function
 int main() {
     int n;
     Block* root = create_block(1024);
@@ -97,6 +98,10 @@ int main() {
     }
 
     printf("\nMemory Allocation:\n");
-    print_blocks(root, 0);
+    int total_internal_fragmentation = 0;
+    print_blocks(root, 0, &total_internal_fragmentation);
+
+    printf("\nTotal Internal Fragmentation: %d\n", total_internal_fragmentation);
+
     return 0;
 }
