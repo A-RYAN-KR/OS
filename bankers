@@ -1,0 +1,119 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+#define MAX 10  // Max number of processes/resources
+
+void calculateNeed(int p, int r, int maxMatrix[MAX][MAX], int alloc[MAX][MAX], int need[MAX][MAX]) {
+    for (int i = 0; i < p; i++)
+        for (int j = 0; j < r; j++)
+            need[i][j] = maxMatrix[i][j] - alloc[i][j];
+}
+
+void printTable(int p, int r, int alloc[MAX][MAX], int maxMatrix[MAX][MAX], int need[MAX][MAX], int avail[MAX]) {
+    printf("\n%-8s%-15s%-15s%-15s\n", "Process", "Allocation", "Max", "Need");
+    for (int i = 0; i < p; i++) {
+        printf("P%-7d", i);
+        for (int j = 0; j < r; j++)
+            printf("%d ", alloc[i][j]);
+        printf("       ");
+        for (int j = 0; j < r; j++)
+            printf("%d ", maxMatrix[i][j]);
+        printf("       ");
+        for (int j = 0; j < r; j++)
+            printf("%d ", need[i][j]);
+        printf("\n");
+    }
+
+    printf("Available: ");
+    for (int i = 0; i < r; i++)
+        printf("%d ", avail[i]);
+    printf("\n");
+}
+
+bool isSafe(int p, int r, int alloc[MAX][MAX], int maxMatrix[MAX][MAX], int need[MAX][MAX], int avail[MAX], int safeSeq[MAX]) {
+    bool finish[MAX] = {false};
+    int work[MAX];
+    for (int i = 0; i < r; i++)
+        work[i] = avail[i];
+
+    int count = 0;
+    while (count < p) {
+        bool found = false;
+        for (int i = 0; i < p; i++) {
+            if (!finish[i]) {
+                bool canRun = true;
+                for (int j = 0; j < r; j++) {
+                    if (need[i][j] > work[j]) {
+                        canRun = false;
+                        break;
+                    }
+                }
+                if (canRun) {
+                    for (int j = 0; j < r; j++)
+                        work[j] += alloc[i][j];
+                    safeSeq[count++] = i;
+                    finish[i] = true;
+                    found = true;
+
+                    printf("\n--> Process P%d safely executed.", i);
+                    printf("\n   Updated Available Resources: ");
+                    for (int j = 0; j < r; j++)
+                        printf("%d ", work[j]);
+                    printf("\n");
+
+                    printTable(p, r, alloc, maxMatrix, need, work);
+                }
+            }
+        }
+        if (!found)
+            return false;
+    }
+    return true;
+}
+
+int main() {
+    int p, r;
+    int alloc[MAX][MAX], maxMatrix[MAX][MAX], need[MAX][MAX], avail[MAX], total[MAX], safeSeq[MAX];
+
+    printf("Enter number of processes: ");
+    scanf("%d", &p);
+
+    printf("Enter number of resource types: ");
+    scanf("%d", &r);
+
+    printf("Enter total available resources (e.g. A B C ...):\n");
+    for (int i = 0; i < r; i++)
+        scanf("%d", &total[i]);
+
+    printf("Enter allocation matrix:\n");
+    for (int i = 0; i < p; i++)
+        for (int j = 0; j < r; j++)
+            scanf("%d", &alloc[i][j]);
+
+    printf("Enter maximum matrix:\n");
+    for (int i = 0; i < p; i++)
+        for (int j = 0; j < r; j++)
+            scanf("%d", &maxMatrix[i][j]);
+
+    for (int i = 0; i < r; i++) {
+        avail[i] = total[i];
+        for (int j = 0; j < p; j++)
+            avail[i] -= alloc[j][i];
+    }
+
+    calculateNeed(p, r, maxMatrix, alloc, need);
+
+    printf("\nInitial System State:");
+    printTable(p, r, alloc, maxMatrix, need, avail);
+
+    if (isSafe(p, r, alloc, maxMatrix, need, avail, safeSeq)) {
+        printf("\nSystem is in a SAFE state.\nSafe sequence: ");
+        for (int i = 0; i < p; i++)
+            printf("P%d ", safeSeq[i]);
+        printf("\n");
+    } else {
+        printf("\nSystem is NOT in a safe state.\n");
+    }
+
+    return 0;
+}
