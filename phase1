@@ -1,0 +1,281 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+void Load(ifstream &fp);
+void INIT();
+void START_EXECUTION();
+void EXECUTE_USER_PROGRAM();
+void MOS();
+void GD();
+void PD();
+void H();
+void LR();
+void SR();
+void CR();
+void BT();
+
+char M[100][4];
+char IR[4];
+char R[4];
+char buffer[40];
+int IC;
+int C;
+int SI;
+bool programLoaded = false;
+string currentDataLine;
+bool dataAvailable = false;
+
+void Load(ifstream &fp) {
+    string str;
+    if (!fp.is_open()) return;
+    int row = 0;
+    programLoaded = false;
+    
+    while (getline(fp, str)) {
+        if (str.substr(0, 4) == "$AMJ") {
+            INIT();
+            row = 0;
+            
+            while (getline(fp, str)) {
+                if (str.substr(0, 4) == "$DTA") {
+                    if (getline(fp, currentDataLine)) {
+                        dataAvailable = true;
+                    }
+                    break;
+                }
+                
+                for (int i = 0; i < 40; i++) {
+                    buffer[i] = ' ';
+                }
+                
+                int len = str.length();
+                for (int i = 0; i < len; i++) {
+                    buffer[i] = str[i];
+                }
+                
+                for (int i = 0; i < 40; i += 4) {
+                    for (int k = 0; k < 4; k++) {
+                        M[row][k] = buffer[i + k];
+                    }
+                    row++;
+                    if (row >= 100) break;
+                }
+
+                
+                
+                if (row >= 100) break;
+            }
+            
+            while (getline(fp, str)) {
+                if (str.substr(0, 4) == "$END") {
+                    programLoaded = true;
+                    break;
+                }
+            }
+            
+            if (programLoaded) break;
+        }
+    }
+}
+
+void INIT() {
+    for (int i = 0; i < 100; i++) {
+        for (int j = 0; j < 4; j++) {
+            M[i][j] = ' ';
+        }
+    }
+    for (int i = 0; i < 4; i++) {
+        IR[i] = ' ';
+        R[i] = ' ';
+    }
+    IC = 0;
+    SI = 0;
+    C = 0;
+    dataAvailable = false;
+}
+
+void print_memory_block() {
+    cout << "Memory Contents:" << endl;
+    for (int i = 0; i < 100; i++) {
+        cout << "M[" << i << "]: ";
+        for (int j = 0; j < 4; j++) {
+            cout << M[i][j];
+        }
+        cout << endl;
+    }
+}
+
+void START_EXECUTION() {
+    IC = 0;
+    EXECUTE_USER_PROGRAM();
+}
+
+void EXECUTE_USER_PROGRAM() {
+    while (1) {
+        for (int i = 0; i < 4; i++) {
+            IR[i] = M[IC][i];
+        }
+        
+        if (IR[0] == ' ' || (IR[0] == ' ' && IR[1] == ' ')) {
+            break;
+        }
+        
+        IC++;
+        
+        if (IR[0] == 'G' && IR[1] == 'D') {
+            SI = 1;
+            MOS();
+        }
+        else if (IR[0] == 'P' && IR[1] == 'D') {
+            SI = 2;
+            MOS();
+        }
+        else if (IR[0] == 'H') {
+            SI = 3;
+            MOS();
+            break;
+        }
+        else if (IR[0] == 'L' && IR[1] == 'R') {
+            LR();
+        }
+        else if (IR[0] == 'S' && IR[1] == 'R') {
+            SR();
+        }
+        else if (IR[0] == 'B' && IR[1] == 'T') {
+            BT();
+        }
+        else if (IR[0] == 'C' && IR[1] == 'R') {
+            CR();
+        }
+        else {
+            break;
+        }
+    }
+}
+
+void LR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int address = stoi(operand);
+    
+    for(int i = 0; i < 4; i++) {
+        R[i] = M[address][i]; 
+    }
+}
+
+void SR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int address = stoi(operand);
+    
+    for(int i = 0; i < 4; i++) {
+        M[address][i] = R[i]; 
+    }
+}
+
+void CR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int address = stoi(operand);
+    
+    C = 1;
+    for(int i = 0; i < 4; i++) {
+        if(R[i] != M[address][i]) {
+            C = 0;
+            break; 
+        }
+    }
+}
+
+void BT() {
+    if(C == 1) {
+        int address =stoi(string(1, IR[2]) + string(1, IR[3]));
+        IC = address;
+        C = 0; 
+    }
+}
+
+void MOS() {
+    if(SI == 1) {
+        GD();
+    }
+    else if(SI == 2) {
+        PD();
+    }
+    else if(SI == 3) {
+        H();
+    }
+    SI = 0;
+}
+
+void GD() {
+    int row = stoi(string(1, IR[2]) + string(1, IR[3]));
+    
+    if (!dataAvailable) return;
+    
+    for (int i = 0; i < 40; i++) {
+        buffer[i] = ' ';
+    }
+    
+    int dataLen = currentDataLine.length();
+    for (int i = 0; i < dataLen; i++) {
+        buffer[i] = currentDataLine[i];
+    }
+    
+    for (int i = 0; i < 40; i += 4) {
+        for (int k = 0; k < 4; k++) {
+            M[row][k] = buffer[i + k];
+        }
+        row++; 
+    } 
+}
+
+void PD() {
+    ofstream outfile("D:/Pranay/College Related/SY/Sem4-Core/OS/Operating-System-Algorithm-Codes/output.txt", ios::app);
+    if (!outfile.is_open()) return;
+    
+    int row = stoi(string(1, IR[2]) + string(1, IR[3]));
+    
+    for (int i = 0; i < 40; i++) {
+        buffer[i] = ' ';
+    }
+    
+    for (int i = 0; i < 40 && row < 100; i+=4) {
+        for (int k = 0; k < 4; k++) {
+            buffer[i+k] = M[row][k];
+        }
+        row++;
+    }
+    
+    for (int i = 0; i < 40; i++) {
+        outfile << buffer[i];
+    }
+    outfile << endl;
+    
+    outfile.close();
+}
+
+void H() {
+    ofstream outfile("D:/Pranay/College Related/SY/Sem4-Core/OS/Operating-System-Algorithm-Codes/output.txt", ios::app);
+    if (!outfile.is_open()) return;
+    outfile << "\n\n";
+    outfile.close();
+}
+
+int main() {
+    ifstream fp("D:/Pranay/College Related/SY/Sem4-Core/OS/Operating-System-Algorithm-Codes/input.txt");
+    if (!fp.is_open()) return 1;
+
+    while (!fp.eof()) {
+        Load(fp);
+        if (programLoaded) {
+            START_EXECUTION();
+            print_memory_block();
+        } 
+        else {
+            break;
+        }
+    }
+
+    fp.close();
+    return 0;
+}
