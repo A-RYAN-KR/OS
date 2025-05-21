@@ -1,0 +1,69 @@
+#include <stdio.h>
+
+struct Process {
+    int pid, AT, BT, RT, priority;
+    int CT, TAT, WT;
+};
+
+void priorityPreemptive(struct Process p[], int n) {
+    int time = 0, completed = 0;
+    int gc[100], gc_index = 0;
+
+    while (completed < n) {
+        int idx = -1, min_pr = 9999;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].AT <= time && p[i].RT > 0 && p[i].priority < min_pr) {
+                min_pr = p[i].priority;
+                idx = i;
+            }
+        }
+
+        if (idx == -1) {
+            time++;
+        } else {
+            p[idx].RT--;
+            gc[gc_index++] = p[idx].pid;
+            time++;
+
+            if (p[idx].RT == 0) {
+                completed++;
+                p[idx].CT = time;
+                p[idx].TAT = p[idx].CT - p[idx].AT;
+                p[idx].WT = p[idx].TAT - p[idx].BT;
+            }
+        }
+    }
+
+    // Gantt Chart
+    printf("\nGantt Chart:\n\n ");
+    for (int i = 0; i < gc_index; i++) printf("P%d ", gc[i]);
+    printf("\n 0");
+    for (int i = 1; i <= gc_index; i++) printf(" %2d", i);
+
+    // Table Output
+    printf("\n\nProcess\tAT\tBT\tPriority\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d\t%d\t%d\t%d\t\t%d\t%d\t%d\n",
+               p[i].pid, p[i].AT, p[i].BT, p[i].priority,
+               p[i].CT, p[i].TAT, p[i].WT);
+    }
+}
+
+int main() {
+    int n;
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    struct Process p[n];
+    for (int i = 0; i < n; i++) {
+        p[i].pid = i + 1;
+        printf("Enter AT, BT, Priority for P%d: ", p[i].pid);
+        scanf("%d %d %d", &p[i].AT, &p[i].BT, &p[i].priority);
+        p[i].RT = p[i].BT;  // Remaining time initialized to burst time
+        p[i].CT = p[i].TAT = p[i].WT = 0;
+    }
+
+    priorityPreemptive(p, n);
+    return 0;
+}
