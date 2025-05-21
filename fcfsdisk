@@ -1,0 +1,42 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Function to perform FCFS Disk Scheduling
+void fcfs(int requests[], int n, int head) {
+    int seek_count = 0;
+
+    printf("\nFCFS Disk Scheduling Order:\n");
+
+    // Process requests in the order they are given
+    for (int i = 0; i < n; i++) {
+        int seek = abs(requests[i] - head); 
+        printf("Seek time for %d is %d\n", requests[i], seek);
+        seek_count += seek;
+        head = requests[i];
+    }
+
+    printf("\nTotal seek time: %d\n", seek_count);
+    printf("Average seek time: %.2f\n", (float)seek_count / n);
+}
+
+int main() {
+    int n, head;
+
+    printf("Enter the number of disk requests: ");
+    scanf("%d", &n);
+
+    int requests[n];
+
+    printf("Enter the disk request sequence:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &requests[i]);
+    }
+
+    printf("Enter the initial head position: ");
+    scanf("%d", &head);
+
+    // Call the FCFS scheduling function
+    fcfs(requests, n, head);
+
+    return 0;
+}
