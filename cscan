@@ -1,0 +1,83 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Function to sort an array using bubble sort
+void sort(int arr[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                int temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+}
+
+// Function to perform C-SCAN Disk Scheduling
+void cscan(int requests[], int n, int head, int disk_size) {
+    int seek_count = 0;
+
+    // Add head, 0, and (disk_size - 1) to the request queue
+    requests[n++] = head;
+    requests[n++] = 0;
+    requests[n++] = disk_size - 1;
+
+    // Sort the requests
+    sort(requests, n);
+
+    // Find the position of the head in the sorted array
+    int pos;
+    for (int i = 0; i < n; i++) {
+        if (requests[i] == head) {
+            pos = i;
+            break;
+        }
+    }
+
+    // Service requests to the right of the head
+    for (int i = pos + 1; i < n - 1; i++) { 
+        int seek = abs(requests[i] - head); 
+        printf("Seek time for %d is %d\n", requests[i], seek);
+        seek_count += seek;
+        head = requests[i];
+    }
+
+    head = 0; 
+
+    // Service requests to the left of the head
+    for (int i = 1; i < pos; i++) {
+        int seek = abs(requests[i] - head);
+        printf("Seek time for %d is %d\n", requests[i], seek);
+        seek_count += seek;
+        head = requests[i];
+    }
+
+    printf("\nTotal seek time: %d\n", seek_count);
+    printf("Average seek time: %.2f\n", (float)seek_count / (n - 3));
+}
+
+int main() {
+    int n, head, disk_size;
+
+    printf("Enter the number of disk requests: ");
+    scanf("%d", &n);
+
+    int requests[n + 3];  // Extra space for head, 0, and disk_size - 1
+
+    printf("Enter the disk request sequence:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &requests[i]);
+    }
+
+    printf("Enter the initial head position: ");
+    scanf("%d", &head);
+
+    printf("Enter the total disk size: ");
+    scanf("%d", &disk_size);
+
+    // Call the C-SCAN scheduling function
+    cscan(requests, n, head, disk_size);
+
+    return 0;
+}
