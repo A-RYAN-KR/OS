@@ -1,0 +1,73 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Function to find the closest request (SSTF)
+int find_closest_request(int requests[], int n, int head, int processed[]) {
+    int min_distance = 999999;
+    int closest_request_index = -1;
+    
+    for (int i = 0; i < n; i++) {
+        if (!processed[i]) {  // Only consider unprocessed requests
+            int distance = abs(requests[i] - head);
+            if (distance < min_distance) {
+                min_distance = distance;
+                closest_request_index = i;
+            }
+        }
+    }
+    
+    return closest_request_index;
+}
+
+// Function to perform SSTF Disk Scheduling
+void sstf(int requests[], int n, int head) {
+    int seek_count = 0;
+    int processed[n];  // To keep track of processed requests
+
+    // Initialize processed array to 0 (all requests unprocessed initially)
+    for (int i = 0; i < n; i++) {
+        processed[i] = 0;
+    }
+
+    printf("\nSSTF Disk Scheduling Order:\n");
+
+    // Process requests using SSTF
+    for (int i = 0; i < n; i++) {
+        // Find the closest request
+        int closest_request_index = find_closest_request(requests, n, head, processed);
+        
+        // Mark the closest request as processed
+        processed[closest_request_index] = 1;
+        
+        // Calculate and print seek time
+        int seek = abs(requests[closest_request_index] - head); 
+        printf("Seek time for %d is %d\n", requests[closest_request_index], seek);
+        seek_count += seek;
+        head = requests[closest_request_index];
+    }
+
+    printf("\nTotal seek time: %d\n", seek_count);
+    printf("Average seek time: %.2f\n", (float)seek_count / n);
+}
+
+int main() {
+    int n, head;
+
+    printf("Enter the number of disk requests: ");
+    scanf("%d", &n);
+
+    int requests[n];
+
+    printf("Enter the disk request sequence:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &requests[i]);
+    }
+
+    printf("Enter the initial head position: ");
+    scanf("%d", &head);
+
+    // Call the SSTF scheduling function
+    sstf(requests, n, head);
+
+    return 0;
+}
