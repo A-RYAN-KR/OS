@@ -1,0 +1,556 @@
+shell script 
+# merge_sort.sh
+bash
+#!/bin/bash
+# Simple Merge Sort: reads numbers from user and sorts them
+
+read -p "Enter numbers separated by spaces: " -a arr
+
+# Merge function: merges two sorted subarrays
+merge() {
+  local -n left=$1 right=$2 result=$3
+  local i=0 j=0 k=0
+  while (( i < ${#left[@]} && j < ${#right[@]} )); do
+    if (( left[i] <= right[j] )); then
+      result[k++]=${left[i++]}
+    else
+      result[k++]=${right[j++]}
+    fi
+  done
+  # append remains
+  while (( i < ${#left[@]} )); do result[k++]=${left[i++]}; done
+  while (( j < ${#right[@]} )); do result[k++]=${right[j++]}; done
+}
+
+# Recursive merge sort
+merge_sort() {
+  local -n a=$1 n=${#a[@]}
+  (( n < 2 )) && return
+  local mid=$(( n/2 ))
+  local left=("${a[@]:0:mid}") right=("${a[@]:mid}")
+  merge_sort left
+  merge_sort right
+  merge left right a
+}
+
+merge_sort arr
+echo "Sorted: ${arr[*]}"
+
+---
+# sort_array.sh
+bash
+#!/bin/bash
+# Sorts numbers ascending or descending based on user choice
+
+read -p "Enter numbers separated by spaces: " -a nums
+read -p "Enter order (asc or desc): " order
+if [[ $order == "asc" ]]; then
+  printf "%s\n" "${nums[@]}" | sort -n
+else
+  printf "%s\n" "${nums[@]}" | sort -nr
+fi
+
+---
+# calculator.sh
+bash
+#!/bin/bash
+# Simple calculator with menu options
+
+eu="\nChoose operation:
+1) Addition
+2) Subtraction
+3) Multiplication
+4) Division
+5) Modulo
+6) Exit\n"
+
+while true; do
+  echo -e "$eu"
+  read -p "Option: " opt
+  case $opt in
+    1) symbol='+' ;; 2) symbol='-' ;; 3) symbol='*' ;; 4) symbol='/' ;; 5) symbol='%' ;;
+    6) echo "Goodbye!"; exit 0;;
+    *) echo "Invalid choice."; continue;;
+  esac
+  read -p "Enter first number: " a
+  read -p "Enter second number: " b
+  # Use bc for division or modulo
+  result=$(echo "$a $symbol $b" | bc -l)
+  echo "Result: $result"
+done
+
+---
+# convert_num.sh
+bash
+#!/bin/bash
+# Convert Decimal<->Hex and print words
+
+# Number-to-words helper (0–9999)
+declare -A units=( [0]="zero" [1]="one" [2]="two" [3]="three" [4]="four" [5]="five" [6]="six" [7]="seven" [8]="eight" [9]="nine" )
+declare -A teens=( [10]="ten" [11]="eleven" [12]="twelve" [13]="thirteen" [14]="fourteen" [15]="fifteen" [16]="sixteen" [17]="seventeen" [18]="eighteen" [19]="nineteen" )
+declare -A tens=( [2]="twenty" [3]="thirty" [4]="forty" [5]="fifty" [6]="sixty" [7]="seventy" [8]="eighty" [9]="ninety" )
+number_to_words() {
+  local n=$1 w=""
+  if (( n < 10 )); then w=${units[$n]}
+  elif (( n < 20 )); then w=${teens[$n]}
+  elif (( n < 100 )); then w=${tens[$((n/10))]}; (( n%10 )) && w+=" ${units[$((n%10))]}"
+  elif (( n < 1000 )); then w="${units[$((n/100))]} hundred"; (( n%100 )) && w+=" and $(number_to_words $((n%100)))"
+  else w="${units[$((n/1000))]} thousand"; (( n%1000 )) && w+=" $(number_to_words $((n%1000)))"; fi
+  echo "$w"
+}
+
+# Choose mode
+echo "1) Decimal to Hex"
+echo "2) Hex to Decimal"
+read -p "Choose conversion: " mode
+if [[ $mode -eq 1 ]]; then
+  read -p "Enter decimal number: " dec
+  hex=$(printf "%X" "$dec")
+  echo "Hex: $hex"
+  echo -n "In words: "
+  for ((i=0;i<${#hex};i++)); do
+    ch=${hex:i:1}
+    [[ $ch =~ [0-9] ]] && echo -n "${units[$ch]} " || echo -n "$ch "
+  done; echo
+else
+  read -p "Enter hex number: " hx
+  dec=$((16#$hx))
+  echo "Decimal: $dec"
+  echo "In words: $(number_to_words $dec)"
+fi
+
+# 1. Repetitive Execution of ls, date, pwd (loop_ls_date_pwd.sh)
+bash
+#!/bin/bash
+# Repeatedly execute ls, date, and pwd every 5 seconds
+while true; do
+  echo "--- ls ---"
+  ls
+  echo "--- date ---"
+  date
+  echo "--- pwd ---"
+  pwd
+  sleep 5
+done
+
+
+# 2. Assign and Display Variable (var_display.sh)
+bash
+#!/bin/bash
+# Assign value to VAR and display with and without $
+VAR="HelloShell"
+echo "Without \$: VAR"
+echo "With \$: $VAR"
+
+
+# 3. Demonstrate Untyped Variables (untyped_vars.sh)
+bash
+#!/bin/bash
+# Variables can hold strings or numbers interchangeably
+VAR=123
+echo "Numeric assignment: $VAR"
+VAR="abc"
+echo "String assignment: $VAR"
+VAR=45
+echo "Back to numeric: $VAR"
+
+
+# 4. Accept Numbers from User (input_keyboard.sh)
+bash
+#!/bin/bash
+# Read numbers from keyboard until empty input
+numbers=()
+while true; do
+  read -p "Enter a number (or press Enter to finish): " n
+  [[ -z $n ]] && break
+  numbers+=("$n")
+done
+echo "You entered: ${numbers[*]}"
+
+
+# 5. Accept Numbers from CLI Arguments (input_args.sh)
+bash
+#!/bin/bash
+# Arguments are treated as numbers
+echo "Numbers provided: $@"
+sum=0
+for num in "$@"; do
+  (( sum += num ))
+done
+echo "Sum: $sum"
+
+
+# 6. Show Environment Variables (show_env.sh)
+bash
+#!/bin/bash
+# Display SHELL, PATH, HOME
+echo "SHELL: $SHELL"
+echo "PATH: $PATH"
+echo "HOME: $HOME"
+
+
+# 7. Create Two Files (create_files.sh)
+bash
+#!/bin/bash
+# Prompt user for two filenames
+read -p "Enter first filename: " f1
+read -p "Enter second filename: " f2
+> "$f1"
+> "$f2"
+echo "Created $f1 and $f2"
+
+
+# 8. Create Two Directories (create_dirs.sh)
+bash
+#!/bin/bash
+# Create directories from command-line
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 dir1 dir2"
+  exit 1
+fi
+mkdir -p "$1" "$2"
+echo "Directories $1 and $2 created"
+
+
+# 9. Copy File Content (copy_file.sh)
+bash
+#!/bin/bash
+# Copy content: copy_file.sh src dest
+if [[ $# -ne 2 ]]; then
+  echo "Usage: $0 source_file dest_file"
+  exit 1
+fi
+cp "$1" "$2"
+echo "Copied $1 to $2"
+
+
+# 10. (Note: Combined with 9), Copy from CLI args above
+
+# 11. Rename File (rename_file.sh)
+bash
+#!/bin/bash
+# Rename old to new: rename_file.sh oldname newname
+if [[ $# -ne 2 ]]; then
+  echo "Usage: $0 old_filename new_filename"
+  exit 1
+fi
+mv "$1" "$2"
+echo "Renamed $1 to $2"
+
+
+# 12. Arithmetic with Integers (int_calc.sh)
+bash
+#!/bin/bash
+# Simple integer arithmetic
+read -p "Enter a: " a
+read -p "Enter b: " b
+echo "a + b = $(( a + b ))"
+echo "a - b = $(( a - b ))"
+echo "a * b = $(( a * b ))"
+echo "a / b = $(( a / b ))"
+echo "a % b = $(( a % b ))"
+
+
+# 13. Arithmetic with Floats (float_calc.sh)
+```bash
+#!/bin/bash
+# Floating point arithmetic using bc
+read -p "Enter a: " a
+read -p "Enter b: " b
+echo "a + b = $(echo "$a + $b" | bc -l)"
+echo "a - b = $(echo "$a - $b" | bc -l)"
+echo "a * b = $(echo "$a * $b" | bc -l)"
+echo "a / b = $(echo "scale=4; $a / $b" | bc -l)"
+
+#!/bin/bash
+
+# 1. check_gt10.sh – Check if number > 10
+echo "1) Check if number > 10"
+read -p "Enter a number: " num
+if (( num > 10 )); then
+  echo "$num is greater than 10."
+else
+  echo "$num is not greater than 10."
+fi
+
+echo
+
+# 2. file_check_create.sh – Check file exists, else create it
+echo "2) Check file exists or create it"
+read -p "Enter filename: " f
+if [[ -e $f ]]; then
+  echo "File '$f' exists."
+else
+  touch "$f"
+  echo "File '$f' created."
+fi
+
+echo
+
+# 3. dir_arg_check.sh – If $1 is not directory, create $2
+echo "3) Check directory or create another"
+read -p "Enter name to test: " testdir
+read -p "Enter name to create if not exists: " createdir
+if [[ -d $testdir ]]; then
+  echo "Directory '$testdir' exists."
+else
+  mkdir -p "$createdir"
+  echo "Created directory '$createdir'."
+fi
+
+echo
+
+# 4. arg_count.sh – Too many arguments?
+echo "4) Check argument count"
+echo "Usage: supply arguments when invoking this script"
+if (( $# > 5 )); then
+  echo "Too many arguments"
+else
+  echo "Argument count: $#"
+fi
+
+echo
+
+# 5. arg_file_dir.sh – Classify each CLI argument
+echo "5) Classify each argument as file, directory, or none"
+for item in "$@"; do
+  if [[ -f $item ]]; then
+    echo "$item is a file"
+  elif [[ -d $item ]]; then
+    echo "$item is a directory"
+  else
+    echo "$item does not exist"
+  fi
+done
+
+echo
+
+# 6. check_month.sh – Is month August or October?
+echo "6) Check month input"
+read -p "Enter month name: " m
+case "${m,,}" in
+  august|october) echo "Month is $m." ;;
+  *)             echo "Month is not August or October." ;;
+esac
+
+echo
+
+# 7. exists_check.sh – Check existence
+echo "7) Check if a name exists (file/dir)"
+read -p "Enter name: " name
+if [[ -e $name ]]; then
+  echo "$name exists."
+else
+  echo "$name does not exist."
+fi
+
+echo
+
+# 8. check_readable.sh – File exists and readable?
+echo "8) File exists and readable check"
+read -p "Enter filename: " f2
+if [[ -e $f2 && -r $f2 ]]; then
+  echo "File '$f2' exists and is readable."
+elif [[ -e $f2 ]]; then
+  echo "File '$f2' exists but is not readable."
+else
+  echo "File '$f2' does not exist."
+fi
+
+echo
+
+# 9. check_curr_month.sh – Is current month August?
+echo "9) Check if current month is August"
+today=$(date +%B)
+if [[ $today == "August" ]]; then
+  echo "Current month is August."
+else
+  echo "Current month is $today."
+fi
+
+echo
+
+# 10. check_user.sh – Root or regular user?
+echo "10) Check if you are root"
+if (( EUID == 0 )); then
+  echo "You are root."
+else
+  echo "You are a regular user."
+fi
+
+echo
+
+# 11. arg_list_cond.sh – List args if >3 else prompt
+echo "11) List args if more than 3"
+if (( $# > 3 )); then
+  echo "Arguments: $*"
+else
+  echo "Type more next time."
+fi
+
+#!/bin/bash
+
+########################################
+# 1. string_handling.sh
+# Various string operations via a simple menu
+########################################
+while true; do
+  echo "
+1) Length of string
+2) Concatenate two strings
+3) Substring extraction
+4) Compare two strings
+5) Search for a substring
+6) Replace substring
+7) Exit
+"
+  read -p "Choose option: " opt
+  case $opt in
+    1)
+      read -p "Enter a string: " s
+      echo "Length: ${#s}"
+      ;;
+    2)
+      read -p "First string: " a
+      read -p "Second string: " b
+      echo "Result: $a$b"
+      ;;
+    3)
+      read -p "Enter string: " s
+      read -p "Start index (0-based): " i
+      read -p "Length: " l
+      echo "Substring: ${s:i:l}"
+      ;;
+    4)
+      read -p "String 1: " a
+      read -p "String 2: " b
+      [[ "$a" == "$b" ]] && echo "Equal" || echo "Not equal"
+      ;;
+    5)
+      read -p "Enter string: " s
+      read -p "Enter pattern: " p
+      [[ "$s" == "$p" ]] && echo "'$p' found in '$s'" || echo "'$p' not found"
+      ;;
+    6)
+      read -p "Enter string: " s
+      read -p "Search for: " old
+      read -p "Replace with: " new
+      echo "Result: ${s//$old/$new}"
+      ;;
+    7) exit 0 ;;
+    *) echo "Invalid choice." ;;
+  esac
+done
+
+########################################
+# 2. arithmetic_functions.sh
+# Basic arithmetic + grading system
+########################################
+while true; do
+  echo "
+1) Add two numbers
+2) Subtract
+3) Multiply
+4) Divide
+5) Grading system
+6) Exit
+"
+  read -p "Choose option: " opt
+  case $opt in
+    [1-4])
+      read -p "Enter A: " a
+      read -p "Enter B: " b
+      case $opt in
+        1) echo "Result: $((a + b))" ;;
+        2) echo "Result: $((a - b))" ;;
+        3) echo "Result: $((a * b))" ;;
+        4)
+          if (( b == 0 )); then
+            echo "Cannot divide by zero"
+          else
+            echo "Result: $((a / b))"
+          fi
+          ;;
+      esac
+      ;;
+    5)
+      read -p "Enter marks (0–100): " m
+      if (( m >= 90 )); then grade="A"
+      elif (( m >= 75 )); then grade="B"
+      elif (( m >= 60 )); then grade="C"
+      elif (( m >= 50 )); then grade="D"
+      else grade="F"
+      fi
+      echo "Grade: $grade"
+      ;;
+    6) exit 0 ;;
+    *) echo "Invalid choice." ;;
+  esac
+done
+
+########################################
+# 3. number_check.sh
+# Palindrome, Prime, Fibonacci, Armstrong
+########################################
+is_palindrome() {
+  local n=$1 rev=0 tmp=$n
+  while (( tmp > 0 )); do
+    rev=$(( rev * 10 + tmp % 10 ))
+    tmp=$(( tmp / 10 ))
+  done
+  [[ $rev -eq $n ]]
+}
+
+is_prime() {
+  local n=$1
+  (( n < 2 )) && return 1
+  for (( i=2; i*i<=n; i++ )); do
+    (( n % i == 0 )) && return 1
+  done
+  return 0
+}
+
+armstrong() {
+  local n=$1 sum=0 tmp=$n digits=${#n}
+  while (( tmp > 0 )); do
+    d=$(( tmp % 10 ))
+    sum=$(( sum + d**digits ))
+    tmp=$(( tmp / 10 ))
+  done
+  [[ $sum -eq $n ]]
+}
+
+echo "Enter a number: "
+read num
+
+# Palindrome check
+if is_palindrome "$num"; then
+  echo "$num is a palindrome"
+else
+  echo "$num is not a palindrome"
+fi
+
+# Prime check
+if is_prime "$num"; then
+  echo "$num is prime"
+else
+  echo "$num is not prime"
+fi
+
+# Fibonacci series up to N terms
+read -p "How many Fibonacci terms? " terms
+a=0; b=1
+echo -n "Fibonacci: "
+for (( i=0; i<terms; i++ )); do
+  echo -n "$a "
+  fn=$(( a + b ))
+  a=$b; b=$fn
+done
+echo
+
+# Armstrong check
+if armstrong "$num"; then
+  echo "$num is an Armstrong number"
+else
+  echo "$num is not an Armstrong number"
+fi
