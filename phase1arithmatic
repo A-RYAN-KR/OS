@@ -250,7 +250,7 @@ void GD() {
 }
 
 void PD() {
-    ofstream outfile("D:/Pranay/College Related/SY/Sem4-Core/OS/Operating-System-Algorithm-Codes/Phase 1 and 2/output.txt", ios::app);
+    ofstream outfile("Phase 1 and 2/output.txt", ios::app);
     if (!outfile.is_open()) return;
     
     int row = stoi(string(1, IR[2]) + string(1, IR[3]));
@@ -275,14 +275,14 @@ void PD() {
 }
 
 void H() {
-    ofstream outfile("D:/Pranay/College Related/SY/Sem4-Core/OS/Operating-System-Algorithm-Codes/Phase 1 and 2/output.txt", ios::app);
+    ofstream outfile("Phase 1 and 2/output.txt", ios::app);
     if (!outfile.is_open()) return;
     outfile << "\n\n";
     outfile.close();
 }
 
 int main() {
-    ifstream fp("D:/Pranay/College Related/SY/Sem4-Core/OS/Operating-System-Algorithm-Codes/Phase 1 and 2/input.txt");
+    ifstream fp("Phase 1 and 2/input.txt");
     if (!fp.is_open()) return 1;
 
     while (!fp.eof()) {
