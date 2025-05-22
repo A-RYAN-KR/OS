@@ -1,0 +1,207 @@
+OS Course Project Phase 2 in c programming Aditya Nath :
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+char memoryBlock[300][4];
+char instructionRegister[4];
+char generalPurposeRegister[4];
+int instructionCounter;
+int toggleRegister;
+int systemInterrupt;
+int timeCounter;
+int lineCounter;
+int pageInterrupt;
+int timeInterrupt;
+struct PCB {
+char jobID[4];
+int timeToLive;
+int timeLimit;
+};
+struct PCB processControlBlock;
+int keyIndex;
+int programCardCounter = 0;
+int allocatedMemory[30];
+int allocatedMemoryIndex = -1;
+int key[30];
+int value[30];
+void printStatus() {
+printf("\nPage Interrupt (PI): %d\n", pageInterrupt);
+printf("Time Interrupt (TI): %d\n", timeInterrupt);
+printf("Time Counter (TTC): %d\n", timeCounter);
+printf("Line Counter (TLC): %d\n", lineCounter);
+printf("Instruction Counter (IC): %d\n", instructionCounter);
+printf("Instruction Register (IR): %s\n", instructionRegister);
+}
+int allocateMemory() {
+srand(time(NULL));
+int address;
+int isAddressUsed = 0;
+while (1) {
+address = rand() % 30;
+for (int i = 0; i <= allocatedMemoryIndex; i++) {
+if (allocatedMemory[i] == address) {
+isAddressUsed = 1;
+break;
+}
+}
+if (isAddressUsed == 0) {
+break;
+} else {
+isAddressUsed = 0;
+}
+}
+allocatedMemoryIndex++;
+allocatedMemory[allocatedMemoryIndex] = address;
+return address;
+}
+void printMemoryBlock() {
+printf("Memory block is:\n\n");
+for (int i = 0; i < 300; i++) {
+if (i >= 100) printf("%d ", i);
+else if (i >= 10) printf("%d ", i);
+else printf("%d ", i);
+for (int j = 0; j < 4; j++) {
+printf("|%c", memoryBlock[i][j]);
+}
+printf("|\n");
+}
+}
+int addressMap(int IC) {
+if (IC % 10 == 0 && IC != 0) {
+lineCounter++;
+}
+int address = (memoryBlock[processControlBlock.timeToLive + lineCounter][2]
+- '0') * 10 +
+(memoryBlock[processControlBlock.timeToLive + lineCounter][3] - '0');
+address = address * 10 + IC % 10;
+return address;
+}
+int map(int operandAddress) {
+if (instructionRegister[2] - '0' < 0 || instructionRegister[2] - '0' > 9 ||
+instructionRegister[3] - '0' < 0 || instructionRegister[3] - '0' > 9) {
+pageInterrupt = 2;
+systemInterrupt = 5;
+return -1;
+}
+if (instructionRegister[0] == 'B' && instructionRegister[1] == 'T') {
+return;
+}
+for (int i = 0; i <= keyIndex; i++) {
+if (key[i] == (operandAddress / 10) * 10) {
+return (value[i]) * 10 + operandAddress % 10;
+}
+}
+if ((instructionRegister[0] == 'G' && instructionRegister[1] == 'D') ||
+(instructionRegister[0] == 'S' && instructionRegister[1] == 'R')) {
+keyIndex++;
+key[keyIndex] = operandAddress;
+value[keyIndex] = allocateMemory();
+int temp = value[keyIndex];
+memoryBlock[processControlBlock.timeToLive + programCardCounter][0] =
+'1';
+memoryBlock[processControlBlock.timeToLive + programCardCounter][3] =
+temp % 10 + '0';
+memoryBlock[processControlBlock.timeToLive + programCardCounter][2] =
+temp / 10 + '0';
+programCardCounter++;
+return value[keyIndex] * 10;
+} else {
+pageInterrupt = 3;
+systemInterrupt = 6;
+return -1;
+}
+}
+void printEndOfJob(int errorMessage) {
+FILE *file = fopen("o2.txt", "a");
+fprintf(file, "\nJob ID: %s\n", processControlBlock.jobID);
+switch (errorMessage) {
+case 0:
+fputs(" Job terminated normally, no error\n", file);
+break;
+case 1:
+fputs(" Data out of range error\n", file);
+break;
+case 2:
+fputs(" Line limit exceeded error\n", file);
+break;
+case 3:
+fputs(" Time limit exceeded error\n", file);
+break;
+case 4:
+fputs(" Invalid opcode error\n", file);
+break;
+case 5:
+fputs(" Invalid operand error\n", file);
+break;
+case 6:
+fputs(" Invalid page fault error\n", file);
+break;
+case 7:
+fputs(" Time limit exceeded and invalid opcode\n", file);
+break;
+case 8:
+fputs(" Time limit exceeded and invalid operand\n", file);
+break;
+case 9:
+fputs(" Time limit exceeded and invalid page fault\n", file);
+break;
+}
+fprintf(file, "IC: %d\n", instructionCounter);
+fprintf(file, "IR: %s\n", instructionRegister);
+fprintf(file, "TTC: %d\n", timeCounter);
+fprintf(file, "TLC: %d\n", lineCounter);
+fclose(file);
+}
+void load() {
+FILE *file = fopen("i2.txt", "r");
+char str[100];
+while (fgets(str, 41, file) != NULL) {
+if (str[0] == '$' && str[1] == 'A' && str[2] == 'M' && str[3] == 'J') {
+processControlBlock.timeToLive = (str[8] - '0') * 1000 + (str[9] - '0') * 100 +
+(str[10] - '0') * 10 + (str[11] - '0');
+processControlBlock.timeLimit = (str[12] - '0') * 1000 + (str[13] - '0') * 100
++
+(str[14] - '0') * 10 + (str[15] - '0');
+for (int i = processControlBlock.timeToLive; i <
+processControlBlock.timeToLive + 10; i++) {
+memoryBlock[i][0] = '0';
+memoryBlock[i][2] = '*';
+memoryBlock[i][3] = '*';
+}
+printf("AMJ instruction found\n");
+printf("JID: %s\n", processControlBlock.jobID);
+printf("TTL: %d\n", processControlBlock.timeToLive);
+printf("TLL: %d\n\n", processControlBlock.timeLimit);
+while (1) {
+fgets(str, 100, file);
+if (str[0] == '$' && str[1] == 'D' && str[2] == 'T' && str[3] == 'A') break;
+int temp = allocateMemory();
+memoryBlock[temp][0] = '1';
+memoryBlock[temp][3] = temp % 10 + '0';
+memoryBlock[temp][2] = temp / 10 + '0';
+}
+}
+}
+fclose(file);
+}
+int main() {
+printf("Running the Operating System Project Phase II\n");
+load();
+return 0;
+}
+Input:
+$AMJ000100030001
+GD10PD10H
+$DTA
+Hello
+$END0001
+$AMJ000100050001
+GD10PD10GD20PD20H
+$DTA
+Hello
+SY A Students
+$END0001
+Output:
+
+ 

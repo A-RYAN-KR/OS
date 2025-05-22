@@ -1,0 +1,231 @@
+OS CP ( Course Project ) Phase : 1
+Subject : Operating System
+Name : Aditya Nath Deepak
+Code :
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+char Memory[100][4];
+char IR[4];
+char R[4];
+int IC;
+bool C;
+int SI;
+char buffer[41];
+int currentLine = 0;
+int row = 0;
+FILE *inputFile;
+FILE *outputFile;
+void printState() {
+printf("\n------------------\n");
+printf("Current Memory State:\n");
+for (int i = 0; i < 100; i++) {
+printf("Memory[%02d] : ", i);
+for (int j = 0; j < 4; j++) {
+if (Memory[i][j] == ' ')
+printf(". ");
+else
+printf("%c ", Memory[i][j]);
+}
+printf("\n");
+}
+printf("\nInstruction Register (IR): ");
+for (int i = 0; i < 4; i++) printf("%c ", IR[i]);
+printf("\nGeneral Purpose Register (R): ");
+for (int i = 0; i < 4; i++) printf("%c ", R[i]);
+printf("\nInstruction Counter (IC): %d", IC);
+printf("\nComparison Flag (C): %s", C ? "TRUE" : "FALSE");
+printf("\n------------------\n");
+}
+void INIT() {
+for (int i = 0; i < 100; i++)
+for (int j = 0; j < 4; j++)
+Memory[i][j] = ' ';
+for (int i = 0; i < 4; i++) {
+IR[i] = ' ';
+R[i] = ' ';
+}
+IC = 0;
+C = false;
+SI = 0;
+row = 0;
+}
+void READ() {
+char line[100];
+fseek(inputFile, currentLine, SEEK_SET);
+if (fgets(line, sizeof(line), inputFile) == NULL) {
+printf("ERROR: No input data available\n");
+exit(1);
+}
+if (strncmp(line, "$END", 4) == 0) {
+printf("ERROR: Out of Data ($END encountered in READ)\n");
+exit(1);
+}
+int loc = (IR[2] - '0') * 10 + (IR[3] - '0');
+int k = 0;
+for (int i = 0; i < 10 && loc + i < 100; i++) {
+for (int j = 0; j < 4 && line[k] != '\0' && line[k] != '\n'; j++) {
+Memory[loc + i][j] = line[k++];
+}
+}
+currentLine = ftell(inputFile);
+}
+void WRITE() {
+int loc = (IR[2] - '0') * 10 + (IR[3] - '0');
+for (int i = 0; i < 10 && loc + i < 100; i++) {
+for (int j = 0; j < 4; j++) {
+if (Memory[loc + i][j] != ' ')
+fputc(Memory[loc + i][j], outputFile);
+}
+}
+fprintf(outputFile, "\n\n");
+}
+void HALT() {
+fprintf(outputFile, "\n\n");
+}
+void MOS() {
+switch (SI) {
+case 1: READ(); break;
+case 2: WRITE(); break;
+case 3: HALT(); break;
+}
+SI = 0;
+}
+void EXECUTE_USER_PROGRAM() {
+while (1) {
+for (int i = 0; i < 4; i++)
+IR[i] = Memory[IC][i];
+IC++;
+char op1 = IR[0];
+char op2 = IR[1];
+int loc = (IR[2] - '0') * 10 + (IR[3] - '0');
+if (op1 == 'G' && op2 == 'D') {
+SI = 1;
+MOS();
+} else if (op1 == 'P' && op2 == 'D') {
+SI = 2;
+MOS();
+} else if (op1 == 'H') {
+SI = 3;
+MOS();
+break;
+} else if (op1 == 'L' && op2 == 'R') {
+for (int j = 0; j < 4; j++)
+R[j] = Memory[loc][j];
+} else if (op1 == 'S' && op2 == 'R') {
+for (int j = 0; j < 4; j++)
+Memory[loc][j] = R[j];
+} else if (op1 == 'C' && op2 == 'R') {
+C = true;
+for (int j = 0; j < 4; j++) {
+if (R[j] != Memory[loc][j]) {
+C = false;
+break;
+}
+}
+} else if (op1 == 'B' && op2 == 'T') {
+if (C)
+IC = loc;
+}
+}
+printState();
+}
+void START_EXECUTION() {
+IC = 0;
+EXECUTE_USER_PROGRAM();
+}
+void LOAD() {
+char line[100];
+while (fgets(line, sizeof(line), inputFile) != NULL) {
+if (strncmp(line, "$AMJ", 4) == 0) {
+INIT();
+} else if (strncmp(line, "$DTA", 4) == 0) {
+currentLine = ftell(inputFile);
+START_EXECUTION();
+} else if (strncmp(line, "$END", 4) == 0) {
+continue;
+} else {
+if (row >= 100) {
+printf("ERROR: Memory Overflow while loading
+program\n");
+exit(1);
+}
+int k = 0;
+for (int i = 0; i < 10 && row < 100; i++, row++) {
+for (int j = 0; j < 4 && line[k] != '\0' && line[k] != '\n'; j++) {
+Memory[row][j] = line[k++];
+}
+}
+}
+}
+}
+int main() {
+inputFile = fopen("input.txt", "r");
+outputFile = fopen("output.txt", "w");
+if (inputFile == NULL || outputFile == NULL) {
+printf("ERROR: Cannot open input or output file.\n");
+exit(1);
+}
+LOAD();
+fclose(inputFile);
+fclose(outputFile);
+return 0;
+}
+Input.txt file ( INPUT FILE ) :
+$AMJ000100070005
+GD20LR22SR30LR21SR31LR20SR32PD30H
+$DTA
+Cat eat rat
+$END
+$AMJ000200160005
+GD20PD20GD30PD30GD40PD40GD50PD50GD60PD60GD70PD70GD80PD80H
+$DTA
+**** * ****
+* * *
+* * *
+* *** * ****
+* * * * *
+* * * * *
+**** * ****
+$END
+$AMJ000400070005
+GD20GD30LR30SR22LR31SR23PD20H
+$DTA
+My name is raj
+is rahul
+$END
+$AMJ000500070005
+GD20GD30GD40GD50GD60GD70GD80LR60CR20BT17CR30BT17CR40BT17CR50BT17PD80PD
+70H
+$DTA
+My
+name
+is
+raj
+name
+Found
+Not Found
+$END
+$AMJ000300070005
+GD20GD30GD40LR20CR30BT08SR50CR40BT11LR30SR60LR30CR40BT16LR40SR70PD50PD6
+0PD70H
+$DTA
+ITE1
+ITE2
+ITE2
+$END
+OUTPUT.txt File ( OUTPUT FILE ) :
+rat eat Cat
+**** * ****
+* * *
+* * *
+* *** * ****
+* * * * *
+* * * * *
+**** * ****
+My name is rahul
+Found
+ITE1
+ITE2
+Screenshot of the OUTPUT.txt File :
