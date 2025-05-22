@@ -563,23 +563,16 @@ Binary to decimal
 # Converts a binary number to decimal
 
 read -p "Enter a binary number: " binary
-if [[ $binary =~ ^[01]+$ ]]; then
-  decimal=$((2#$binary))
-  echo "Decimal: $decimal"
-else
-  echo "Invalid binary number."
-fi
+decimal=0
+power=1
 
+# Process each digit from right to left
+for (( i=${#binary}-1; i>=0; i-- )); do
+  digit=${binary:$i:1}
+  if [[ $digit -eq 1 ]]; then
+    (( decimal += power ))
+  fi
+  (( power *= 2 ))
+done
 
-########################################
-Decimal to binary
-#!/bin/bash
-# Converts a decimal number to binary
-
-read -p "Enter a decimal number: " decimal
-if [[ $decimal =~ ^[0-9]+$ ]]; then
-  binary=$(echo "obase=2; $decimal" | bc)
-  echo "Binary: $binary"
-else
-  echo "Invalid decimal number."
-fi
+echo "Decimal: $decimal"
