@@ -1,0 +1,388 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+void Load(ifstream &fp);
+void INIT();
+void START_EXECUTION();
+void EXECUTE_USER_PROGRAM();
+void MOS();
+void GD();
+void PD();
+void H();
+void LR();
+void SR();
+void CR();
+void BT();
+bool isValidOpcode();
+bool isValidOperand();
+void displayError(int errorCode);
+
+char M[200][4];  // Changed to 200 words
+char IR[4];
+char R[4];
+char buffer[40];
+int IC;
+int C;
+int SI;
+int PI;  // Program Interrupt for errors
+bool programLoaded = false;
+string currentDataLine;
+bool dataAvailable = false;
+
+void Load(ifstream &fp) {
+    string str;
+    if (!fp.is_open()) return;
+    int row = 0;
+    programLoaded = false;
+    
+    while (getline(fp, str)) {
+        if (str.substr(0, 4) == "$AMJ") {
+            INIT();
+            row = 0;
+            
+            while (getline(fp, str)) {
+                if (str.substr(0, 4) == "$DTA") {
+                    if (getline(fp, currentDataLine)) {
+                        dataAvailable = true;
+                    }
+                    break;
+                }
+                
+                for (int i = 0; i < 40; i++) {
+                    buffer[i] = ' ';
+                }
+                
+                int len = str.length();
+                for (int i = 0; i < len; i++) {
+                    buffer[i] = str[i];
+                }
+                
+                for (int i = 0; i < 40; i += 4) {
+                    for (int k = 0; k < 4; k++) {
+                        M[row][k] = buffer[i + k];
+                    }
+                    row++;
+                    if (row >= 200) break;  // Changed to 200
+                }
+                
+                if (row >= 200) break;  // Changed to 200
+            }
+            
+            while (getline(fp, str)) {
+                if (str.substr(0, 4) == "$END") {
+                    programLoaded = true;
+                    break;
+                }
+            }
+            
+            if (programLoaded) break;
+        }
+    }
+}
+
+void INIT() {
+    for (int i = 0; i < 200; i++) {  // Changed to 200
+        for (int j = 0; j < 4; j++) {
+            M[i][j] = ' ';
+        }
+    }
+    for (int i = 0; i < 4; i++) {
+        IR[i] = ' ';
+        R[i] = ' ';
+    }
+    IC = 0;
+    SI = 0;
+    PI = 0;  // Initialize Program Interrupt
+    C = 0;
+    dataAvailable = false;
+}
+
+void print_memory_block() {
+    cout << "Memory Contents (First 50 locations):" << endl;
+    for (int i = 0; i < 50; i++) {  // Display first 50 for readability
+        cout << "M[" << i << "]: ";
+        for (int j = 0; j < 4; j++) {
+            cout << M[i][j];
+        }
+        cout << endl;
+    }
+}
+
+void START_EXECUTION() {
+    IC = 0;
+    EXECUTE_USER_PROGRAM();
+}
+
+bool isValidOpcode() {
+    string opcode = string(1, IR[0]) + string(1, IR[1]);
+    return (opcode == "GD" || opcode == "PD" || opcode == "LR" || 
+            opcode == "SR" || opcode == "CR" || opcode == "BT" || 
+            (IR[0] == 'H' && IR[1] == ' '));
+}
+
+bool isValidOperand() {
+    // Check if operand is numeric and within valid range
+    if (IR[0] == 'H' && IR[1] == ' ') {
+        return true; // H instruction doesn't need operand validation
+    }
+    
+    if (!isdigit(IR[2]) || !isdigit(IR[3])) {
+        return false;
+    }
+    
+    int operand = stoi(string(1, IR[2]) + string(1, IR[3]));
+    return (operand >= 0 && operand < 200);  // Changed to 200
+}
+
+void displayError(int errorCode) {
+    ofstream outfile("output.txt", ios::app);
+    if (!outfile.is_open()) return;
+    
+    switch(errorCode) {
+        case 1:
+            cout << "ERROR: Invalid Opcode at IC = " << IC-1 << endl;
+            outfile << "ERROR: Invalid Opcode at IC = " << IC-1 << endl;
+            break;
+        case 2:
+            cout << "ERROR: Invalid Operand at IC = " << IC-1 << endl;
+            outfile << "ERROR: Invalid Operand at IC = " << IC-1 << endl;
+            break;
+        case 3:
+            cout << "ERROR: Invalid Memory Access at IC = " << IC-1 << endl;
+            outfile << "ERROR: Invalid Memory Access at IC = " << IC-1 << endl;
+            break;
+    }
+    
+    outfile.close();
+}
+
+void EXECUTE_USER_PROGRAM() {
+    while (1) {
+        // Fetch instruction
+        for (int i = 0; i < 4; i++) {
+            IR[i] = M[IC][i];
+        }
+        
+        // Check for end of program
+        if (IR[0] == ' ' || (IR[0] == ' ' && IR[1] == ' ')) {
+            break;
+        }
+        
+        IC++;
+        
+        // Check for valid opcode
+        if (!isValidOpcode()) {
+            PI = 1;  // Opcode error
+            displayError(1);
+            break;
+        }
+        
+        // Check for valid operand
+        if (!isValidOperand()) {
+            PI = 2;  // Operand error
+            displayError(2);
+            break;
+        }
+        
+        // Execute instruction
+        if (IR[0] == 'G' && IR[1] == 'D') {
+            SI = 1;
+            MOS();
+        }
+        else if (IR[0] == 'P' && IR[1] == 'D') {
+            SI = 2;
+            MOS();
+        }
+        else if (IR[0] == 'H') {
+            SI = 3;
+            MOS();
+            break;
+        }
+        else if (IR[0] == 'L' && IR[1] == 'R') {
+            LR();
+        }
+        else if (IR[0] == 'S' && IR[1] == 'R') {
+            SR();
+        }
+        else if (IR[0] == 'B' && IR[1] == 'T') {
+            BT();
+        }
+        else if (IR[0] == 'C' && IR[1] == 'R') {
+            CR();
+        }
+        
+        // Check for any errors that occurred during execution
+        if (PI != 0) {
+            displayError(PI);
+            break;
+        }
+    }
+}
+
+void LR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int address = stoi(operand);
+    
+    if (address >= 200) {  // Changed to 200
+        PI = 3;  // Invalid memory access
+        return;
+    }
+    
+    for(int i = 0; i < 4; i++) {
+        R[i] = M[address][i]; 
+    }
+}
+
+void SR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int address = stoi(operand);
+    
+    if (address >= 200) {  // Changed to 200
+        PI = 3;  // Invalid memory access
+        return;
+    }
+    
+    for(int i = 0; i < 4; i++) {
+        M[address][i] = R[i]; 
+    }
+}
+
+void CR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int address = stoi(operand);
+    
+    if (address >= 200) {  // Changed to 200
+        PI = 3;  // Invalid memory access
+        return;
+    }
+    
+    C = 1;
+    for(int i = 0; i < 4; i++) {
+        if(R[i] != M[address][i]) {
+            C = 0;
+            break; 
+        }
+    }
+}
+
+void BT() {
+    int address = stoi(string(1, IR[2]) + string(1, IR[3]));
+    
+    if (address >= 200) {  // Changed to 200
+        PI = 3;  // Invalid memory access
+        return;
+    }
+    
+    if(C == 1) {
+        IC = address;
+        C = 0; 
+    }
+}
+
+void MOS() {
+    if(SI == 1) {
+        GD();
+    }
+    else if(SI == 2) {
+        PD();
+    }
+    else if(SI == 3) {
+        H();
+    }
+    SI = 0;
+}
+
+void GD() {
+    int row = stoi(string(1, IR[2]) + string(1, IR[3]));
+    
+    if (row >= 200) {  // Changed to 200
+        PI = 3;  // Invalid memory access
+        return;
+    }
+    
+    if (!dataAvailable) return;
+    
+    for (int i = 0; i < 40; i++) {
+        buffer[i] = ' ';
+    }
+    
+    int dataLen = currentDataLine.length();
+    for (int i = 0; i < dataLen; i++) {
+        buffer[i] = currentDataLine[i];
+    }
+    
+    // Load data in blocks of 10 words (block size = 10)
+    for (int i = 0; i < 40 && row < 200; i += 4) {
+        for (int k = 0; k < 4; k++) {
+            M[row][k] = buffer[i + k];
+        }
+        row++; 
+    } 
+}
+
+void PD() {
+    ofstream outfile("output.txt", ios::app);
+    if (!outfile.is_open()) return;
+    
+    int row = stoi(string(1, IR[2]) + string(1, IR[3]));
+    
+    if (row >= 200) {  // Changed to 200
+        PI = 3;  // Invalid memory access
+        return;
+    }
+    
+    for (int i = 0; i < 40; i++) {
+        buffer[i] = ' ';
+    }
+    
+    // Print data in blocks of 10 words (block size = 10)
+    for (int i = 0; i < 40 && row < 200; i+=4) {
+        for (int k = 0; k < 4; k++) {
+            buffer[i+k] = M[row][k];
+        }
+        row++;
+    }
+    
+    for (int i = 0; i < 40; i++) {
+        outfile << buffer[i];
+    }
+    outfile << endl;
+    
+    outfile.close();
+}
+
+void H() {
+    ofstream outfile("output.txt", ios::app);
+    if (!outfile.is_open()) return;
+    outfile << "\n\n";
+    outfile.close();
+}
+
+int main() {
+    ifstream fp("input.txt");
+    if (!fp.is_open()) return 1;
+
+    while (!fp.eof()) {
+        Load(fp);
+        if (programLoaded) {
+            cout << "Starting program execution..." << endl;
+            START_EXECUTION();
+            
+            if (PI == 0) {
+                cout << "Program executed successfully!" << endl;
+            } else {
+                cout << "Program terminated due to error (PI = " << PI << ")" << endl;
+            }
+            
+            print_memory_block();
+        } 
+        else {
+            break;
+        }
+    }
+
+    fp.close();
+    return 0;
+}
