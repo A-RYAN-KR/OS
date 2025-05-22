@@ -554,3 +554,32 @@ if armstrong "$num"; then
 else
   echo "$num is not an Armstrong number"
 fi
+
+
+########################################
+Binary to decimal
+
+#!/bin/bash
+# Converts a binary number to decimal
+
+read -p "Enter a binary number: " binary
+if [[ $binary =~ ^[01]+$ ]]; then
+  decimal=$((2#$binary))
+  echo "Decimal: $decimal"
+else
+  echo "Invalid binary number."
+fi
+
+
+########################################
+Decimal to binary
+#!/bin/bash
+# Converts a decimal number to binary
+
+read -p "Enter a decimal number: " decimal
+if [[ $decimal =~ ^[0-9]+$ ]]; then
+  binary=$(echo "obase=2; $decimal" | bc)
+  echo "Binary: $binary"
+else
+  echo "Invalid decimal number."
+fi
