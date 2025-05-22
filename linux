@@ -1,0 +1,197 @@
+linux commands
+#!/bin/bash
+
+# 1. Change your password
+passwd
+
+# 2. Display the system’s date
+date
+
+# 3. Count lines in /etc/passwd
+wc -l /etc/passwd
+
+# 4. Find out who else is on the system
+who
+
+# 5. Redirect man page for date to mydate
+man date > mydate
+
+# 6. Create a subdirectory called mydir
+mkdir mydir
+
+# 7. Move mydate into mydir
+mv mydate mydir/
+
+# 8. Go into mydir and copy mydate to ourdate
+cd mydir
+cp mydate ourdate
+
+# 9. List the contents of mydir
+ls
+
+# 10. Long listing of ourdate (to note permissions)
+ls -l ourdate
+
+# 11. Display the full path of current directory
+pwd
+
+# 12. Move files from mydir back to home
+mv * ~/
+
+# 13. First 5 lines of mydate
+head -n 5 mydate
+
+# 14. Last 8 lines of mydate
+tail -n 8 mydate
+
+# 15. Remove the directory mydir
+rmdir mydir
+
+# 16. Redirect long listing of files to list
+ls -l > list
+
+# 17. Create three capitals files and concatenate into capitals
+echo -e "Mumbai\nBengaluru\nChennai\nHyderabad\nAhmedabad" > capitals1
+echo -e "Kolkata\nJaipur\nLucknow\nBhopal\nPatna"       > capitals2
+echo -e "Thiruvananthapuram\nGuwahati\nShimla\nPanaji\nRaipur" > capitals3
+cat capitals1 capitals2 capitals3 > capitals
+
+# 18. Append capitals2 to capitals
+cat capitals2 >> capitals
+
+# 19. Give read & write permissions to all on capitals
+chmod a+rw capitals
+
+# 20. Give read-only to owner on capitals (then editing will fail)
+chmod 400 capitals
+# e.g., vi capitals  # saving will error “Permission denied”
+
+# 21. Alias to concatenate capitals1–3 into capitals
+alias makecaps='cat capitals1 capitals2 capitals3 > capitals'
+makecaps
+
+# 22. Count occurrences of “the” in mydate
+grep -o -w 'the' mydate | wc -l
+
+# 23. Line numbers where “date” appears in mydate
+grep -n 'date' mydate
+
+# 24. Print lines of mydate without “i”
+grep -v 'i' mydate
+
+# 25. List all 4-letter words in mydate
+grep -oE '\b[A-Za-z]{4}\b' mydate
+
+# 26. Paste NE states and capitals
+# (assuming mystates and mycapitals already exist)
+paste mystates mycapitals
+
+# 27. Print 1st and 3rd columns of /etc/passwd
+cut -d: -f1,3 /etc/passwd
+
+# 28. Count logged-in users and save listing via tee
+who | tee users.txt | wc -l
+
+# 29. Convert mystates to uppercase
+tr '[:lower:]' '[:upper:]' < mystates > mystates_upper
+
+# 30. Show common lines between two files file1 & file2
+grep -Fxf file1 file2
+#!/bin/bash
+
+# 1. Change your password
+passwd
+
+# 2. Display the system’s date
+date
+
+# 3. Count lines in /etc/passwd
+wc -l /etc/passwd
+
+# 4. Find out who else is on the system
+who
+
+# 5. Redirect man page for date to mydate
+man date > mydate
+
+# 6. Create a subdirectory called mydir
+mkdir mydir
+
+# 7. Move mydate into mydir
+mv mydate mydir/
+
+# 8. Go into mydir and copy mydate to ourdate
+cd mydir
+cp mydate ourdate
+
+# 9. List the contents of mydir
+ls
+
+# 10. Long listing of ourdate (to note permissions)
+ls -l ourdate
+
+# 11. Display the full path of current directory
+pwd
+
+# 12. Move files from mydir back to home
+mv * ~/
+
+# 13. First 5 lines of mydate
+head -n 5 mydate
+
+# 14. Last 8 lines of mydate
+tail -n 8 mydate
+
+# 15. Remove the directory mydir
+rmdir mydir
+
+# 16. Redirect long listing of files to list
+ls -l > list
+
+# 17. Create three capitals files and concatenate into capitals
+echo -e "Mumbai\nBengaluru\nChennai\nHyderabad\nAhmedabad" > capitals1
+echo -e "Kolkata\nJaipur\nLucknow\nBhopal\nPatna"       > capitals2
+echo -e "Thiruvananthapuram\nGuwahati\nShimla\nPanaji\nRaipur" > capitals3
+cat capitals1 capitals2 capitals3 > capitals
+
+# 18. Append capitals2 to capitals
+cat capitals2 >> capitals
+
+# 19. Give read & write permissions to all on capitals
+chmod a+rw capitals
+
+# 20. Give read-only to owner on capitals (then editing will fail)
+chmod 400 capitals
+# e.g., vi capitals  # saving will error “Permission denied”
+
+# 21. Alias to concatenate capitals1–3 into capitals
+alias makecaps='cat capitals1 capitals2 capitals3 > capitals'
+makecaps
+
+# 22. Count occurrences of “the” in mydate
+grep -o -w 'the' mydate | wc -l
+
+# 23. Line numbers where “date” appears in mydate
+grep -n 'date' mydate
+
+# 24. Print lines of mydate without “i”
+grep -v 'i' mydate
+
+# 25. List all 4-letter words in mydate
+grep -oE '\b[A-Za-z]{4}\b' mydate
+
+# 26. Paste NE states and capitals
+# (assuming mystates and mycapitals already exist)
+paste mystates mycapitals
+
+# 27. Print 1st and 3rd columns of /etc/passwd
+cut -d: -f1,3 /etc/passwd
+
+# 28. Count logged-in users and save listing via tee
+who | tee users.txt | wc -l
+
+# 29. Convert mystates to uppercase
+tr '[:lower:]' '[:upper:]' < mystates > mystates_upper
+
+# 30. Show common lines between two files file1 & file2
+grep -Fxf file1 file2
