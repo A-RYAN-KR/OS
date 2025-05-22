@@ -1,0 +1,399 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+void Load(ifstream &fp);
+void INIT();
+void START_EXECUTION();
+void EXECUTE_USER_PROGRAM();
+void MOS();
+void GD();
+void PD();
+void H();
+void LR();
+void SR();
+void CR();
+void BT();
+int translateAddress(int virtualAddress);
+void displayPageTable();
+void displayAddressTranslation(int virtualAddr, int realAddr);
+
+char M[400][4];  // Changed to 400 words
+char IR[4];
+char R[4];
+char buffer[40];
+int IC;
+int C;
+int SI;
+bool programLoaded = false;
+string currentDataLine;
+bool dataAvailable = false;
+
+// Page Table with given entries [11, 23, 05]
+int pageTable[3] = {11, 23, 5};
+int pageSize = 10;  // Page size is 10 words
+
+void Load(ifstream &fp) {
+    string str;
+    if (!fp.is_open()) return;
+    int row = 0;
+    programLoaded = false;
+    
+    while (getline(fp, str)) {
+        if (str.substr(0, 4) == "$AMJ") {
+            INIT();
+            row = 0;
+            
+            while (getline(fp, str)) {
+                if (str.substr(0, 4) == "$DTA") {
+                    if (getline(fp, currentDataLine)) {
+                        dataAvailable = true;
+                    }
+                    break;
+                }
+                
+                for (int i = 0; i < 40; i++) {
+                    buffer[i] = ' ';
+                }
+                
+                int len = str.length();
+                for (int i = 0; i < len; i++) {
+                    buffer[i] = str[i];
+                }
+                
+                for (int i = 0; i < 40; i += 4) {
+                    for (int k = 0; k < 4; k++) {
+                        M[row][k] = buffer[i + k];
+                    }
+                    row++;
+                    if (row >= 400) break;  // Changed to 400
+                }
+                
+                if (row >= 400) break;  // Changed to 400
+            }
+            
+            while (getline(fp, str)) {
+                if (str.substr(0, 4) == "$END") {
+                    programLoaded = true;
+                    break;
+                }
+            }
+            
+            if (programLoaded) break;
+        }
+    }
+}
+
+void INIT() {
+    for (int i = 0; i < 400; i++) {  // Changed to 400
+        for (int j = 0; j < 4; j++) {
+            M[i][j] = ' ';
+        }
+    }
+    for (int i = 0; i < 4; i++) {
+        IR[i] = ' ';
+        R[i] = ' ';
+    }
+    IC = 0;
+    SI = 0;
+    C = 0;
+    dataAvailable = false;
+    
+    // Display page table information
+    cout << "Page Table Initialized:" << endl;
+    displayPageTable();
+    cout << endl;
+}
+
+int translateAddress(int virtualAddress) {
+    int pageNumber = virtualAddress / pageSize;
+    int offset = virtualAddress % pageSize;
+    
+    if (pageNumber >= 3) {  // We have only 3 page table entries
+        cout << "ERROR: Page number " << pageNumber << " is out of bounds!" << endl;
+        return -1;  // Invalid address
+    }
+    
+    int frameNumber = pageTable[pageNumber];
+    int realAddress = (frameNumber * pageSize) + offset;
+    
+    displayAddressTranslation(virtualAddress, realAddress);
+    
+    return realAddress;
+}
+
+void displayPageTable() {
+    cout << "Page Table Entries:" << endl;
+    for (int i = 0; i < 3; i++) {
+        cout << "Page " << i << " -> Frame " << pageTable[i] << endl;
+    }
+}
+
+void displayAddressTranslation(int virtualAddr, int realAddr) {
+    int pageNumber = virtualAddr / pageSize;
+    int offset = virtualAddr % pageSize;
+    int frameNumber = pageTable[pageNumber];
+    
+    cout << "Address Translation:" << endl;
+    cout << "Virtual Address: " << virtualAddr << endl;
+    cout << "Page Number: " << pageNumber << ", Offset: " << offset << endl;
+    cout << "Frame Number: " << frameNumber << endl;
+    cout << "Real Address: " << realAddr << " (Frame " << frameNumber << " * " << pageSize << " + " << offset << ")" << endl;
+    cout << "---" << endl;
+}
+
+void print_memory_block() {
+    cout << "Memory Contents (First 50 locations):" << endl;
+    for (int i = 0; i < 50; i++) {
+        cout << "M[" << i << "]: ";
+        for (int j = 0; j < 4; j++) {
+            cout << M[i][j];
+        }
+        cout << endl;
+    }
+    cout << endl;
+    
+    // Show specific frames used by page table
+    cout << "Frame Contents (Page Table Frames):" << endl;
+    for (int p = 0; p < 3; p++) {
+        int frameStart = pageTable[p] * pageSize;
+        cout << "Frame " << pageTable[p] << " (Page " << p << "):" << endl;
+        for (int i = frameStart; i < frameStart + pageSize && i < 400; i++) {
+            cout << "M[" << i << "]: ";
+            for (int j = 0; j < 4; j++) {
+                cout << M[i][j];
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
+}
+
+void START_EXECUTION() {
+    IC = 0;
+    EXECUTE_USER_PROGRAM();
+}
+
+void EXECUTE_USER_PROGRAM() {
+    while (1) {
+        // Translate IC (virtual address) to real address
+        int realIC = translateAddress(IC);
+        if (realIC == -1 || realIC >= 400) {
+            cout << "ERROR: Invalid instruction address!" << endl;
+            break;
+        }
+        
+        for (int i = 0; i < 4; i++) {
+            IR[i] = M[realIC][i];
+        }
+        
+        if (IR[0] == ' ' || (IR[0] == ' ' && IR[1] == ' ')) {
+            break;
+        }
+        
+        IC++;
+        
+        if (IR[0] == 'G' && IR[1] == 'D') {
+            SI = 1;
+            MOS();
+        }
+        else if (IR[0] == 'P' && IR[1] == 'D') {
+            SI = 2;
+            MOS();
+        }
+        else if (IR[0] == 'H') {
+            SI = 3;
+            MOS();
+            break;
+        }
+        else if (IR[0] == 'L' && IR[1] == 'R') {
+            LR();
+        }
+        else if (IR[0] == 'S' && IR[1] == 'R') {
+            SR();
+        }
+        else if (IR[0] == 'B' && IR[1] == 'T') {
+            BT();
+        }
+        else if (IR[0] == 'C' && IR[1] == 'R') {
+            CR();
+        }
+        else {
+            break;
+        }
+    }
+}
+
+void LR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int virtualAddress = stoi(operand);
+    int realAddress = translateAddress(virtualAddress);
+    
+    if (realAddress == -1 || realAddress >= 400) {
+        cout << "ERROR: Invalid memory access in LR!" << endl;
+        return;
+    }
+    
+    for(int i = 0; i < 4; i++) {
+        R[i] = M[realAddress][i]; 
+    }
+}
+
+void SR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int virtualAddress = stoi(operand);
+    int realAddress = translateAddress(virtualAddress);
+    
+    if (realAddress == -1 || realAddress >= 400) {
+        cout << "ERROR: Invalid memory access in SR!" << endl;
+        return;
+    }
+    
+    for(int i = 0; i < 4; i++) {
+        M[realAddress][i] = R[i]; 
+    }
+}
+
+void CR() {
+    string operand = string(1, IR[2]) + string(1, IR[3]);
+    int virtualAddress = stoi(operand);
+    int realAddress = translateAddress(virtualAddress);
+    
+    if (realAddress == -1 || realAddress >= 400) {
+        cout << "ERROR: Invalid memory access in CR!" << endl;
+        return;
+    }
+    
+    C = 1;
+    for(int i = 0; i < 4; i++) {
+        if(R[i] != M[realAddress][i]) {
+            C = 0;
+            break; 
+        }
+    }
+}
+
+void BT() {
+    if(C == 1) {
+        int virtualAddress = stoi(string(1, IR[2]) + string(1, IR[3]));
+        IC = virtualAddress;  // IC uses virtual addresses
+        C = 0; 
+    }
+}
+
+void MOS() {
+    if(SI == 1) {
+        GD();
+    }
+    else if(SI == 2) {
+        PD();
+    }
+    else if(SI == 3) {
+        H();
+    }
+    SI = 0;
+}
+
+void GD() {
+    int virtualAddress = stoi(string(1, IR[2]) + string(1, IR[3]));
+    int realAddress = translateAddress(virtualAddress);
+    
+    if (realAddress == -1 || realAddress >= 400) {
+        cout << "ERROR: Invalid memory access in GD!" << endl;
+        return;
+    }
+    
+    if (!dataAvailable) return;
+    
+    for (int i = 0; i < 40; i++) {
+        buffer[i] = ' ';
+    }
+    
+    int dataLen = currentDataLine.length();
+    for (int i = 0; i < dataLen; i++) {
+        buffer[i] = currentDataLine[i];
+    }
+    
+    int row = realAddress;
+    for (int i = 0; i < 40; i += 4) {
+        for (int k = 0; k < 4; k++) {
+            if (row < 400) {
+                M[row][k] = buffer[i + k];
+            }
+        }
+        row++; 
+    } 
+}
+
+void PD() {
+    ofstream outfile("output.txt", ios::app);
+    if (!outfile.is_open()) return;
+    
+    int virtualAddress = stoi(string(1, IR[2]) + string(1, IR[3]));
+    int realAddress = translateAddress(virtualAddress);
+    
+    if (realAddress == -1 || realAddress >= 400) {
+        cout << "ERROR: Invalid memory access in PD!" << endl;
+        return;
+    }
+    
+    for (int i = 0; i < 40; i++) {
+        buffer[i] = ' ';
+    }
+    
+    int row = realAddress;
+    for (int i = 0; i < 40; i+=4) {
+        for (int k = 0; k < 4; k++) {
+            if (row < 400) {
+                buffer[i+k] = M[row][k];
+            }
+        }
+        row++;
+    }
+    
+    for (int i = 0; i < 40; i++) {
+        outfile << buffer[i];
+    }
+    outfile << endl;
+    
+    outfile.close();
+}
+
+void H() {
+    ofstream outfile("output.txt", ios::app);
+    if (!outfile.is_open()) return;
+    outfile << "\n\n";
+    outfile.close();
+}
+
+int main() {
+    ifstream fp("input.txt");
+    if (!fp.is_open()) return 1;
+
+    cout << "=== Virtual Memory Management System ===" << endl;
+    cout << "Memory Size: 400 words, Page Size: 10 words" << endl;
+    cout << "Page Table: [11, 23, 05]" << endl;
+    cout << endl;
+    
+    // Demonstrate address translation with example VA=12
+    cout << "Example Address Translation:" << endl;
+    int exampleVA = 12;
+    int exampleRA = translateAddress(exampleVA);
+    cout << endl;
+
+    while (!fp.eof()) {
+        Load(fp);
+        if (programLoaded) {
+            cout << "Starting program execution with virtual memory..." << endl;
+            START_EXECUTION();
+            print_memory_block();
+        } 
+        else {
+            break;
+        }
+    }
+
+    fp.close();
+    return 0;
+}
